@@ -1,0 +1,16 @@
+# Dependencies
+node_modules/
+backend/node_modules/
+frontend/node_modules/
+
+# Environment files
+.env
+backend/.env
+
+# IDE / System files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.gemini/
+*.log

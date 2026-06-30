@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delicious Bites - Contact Us</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="logo">
+                <h1>🍽️ Delicious Bites</h1>
+            </div>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="menu.html">Menu</a></li>
+                <li><a href="reservation.html">Reservations</a></li>
+                <li><a href="contact.html" class="active">Contact</a></li>
+                <li><a href="cart.html" class="cart-link">
+                    🛒 Cart <span id="cart-count" class="cart-badge">0</span>
+                </a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <header class="page-header">
+        <div class="container">
+            <h1>Contact Us</h1>
+            <p>Get in touch with us for queries, feedback, or support</p>
+        </div>
+    </header>
+
+    <!-- Contact Section -->
+    <section class="contact-section">
+        <div class="container">
+            <div class="contact-layout">
+                <!-- Left: Info -->
+                <div class="contact-info">
+                    <h2>Reach Out to Us</h2>
+                    <p style="margin-bottom: 2rem; color: var(--text-light);">Have any questions or suggestions? Fill out the form and our team will get back to you as soon as possible.</p>
+                    
+                    <div class="contact-item">
+                        <div class="contact-icon">📍</div>
+                        <div>
+                            <h3>Our Location</h3>
+                            <p>123 Food Street, City Center</p>
+                        </div>
+                    </div>
+                    
+                    <div class="contact-item">
+                        <div class="contact-icon">📞</div>
+                        <div>
+                            <h3>Call Us</h3>
+                            <p>(555) 123-4567</p>
+                        </div>
+                    </div>
+
+                    <div class="contact-item">
+                        <div class="contact-icon">📧</div>
+                        <div>
+                            <h3>Email Support</h3>
+                            <p>support@deliciousbites.com</p>
+                            <p>info@deliciousbites.com</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Form/Success Card -->
+                <div id="contact-form-container" class="contact-form-container">
+                    <h2>Send Us a Message</h2>
+                    <p style="margin-bottom: 1.5rem; color: var(--text-light);">We would love to hear from you.</p>
+                    
+                    <form id="contact-form" onsubmit="handleContactSubmit(event)">
+                        <div class="form-group">
+                            <label for="contact-name">Your Name</label>
+                            <input type="text" id="contact-name" required placeholder="Enter your name">
+                        </div>
+                        <div class="form-group">
+                            <label for="contact-email">Email Address</label>
+                            <input type="email" id="contact-email" required placeholder="name@example.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="contact-subject">Subject</label>
+                            <input type="text" id="contact-subject" required placeholder="What is this regarding?">
+                        </div>
+                        <div class="form-group">
+                            <label for="contact-message">Message</label>
+                            <textarea id="contact-message" rows="4" required placeholder="Type your message here..."></textarea>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary btn-block">Send Message</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>Delicious Bites</h3>
+                    <p>Bringing joy through great food since 2020</p>
+                </div>
+                <div class="footer-section">
+                    <h3>Quick Links</h3>
+                    <ul>
+                        <li><a href="menu.html">Menu</a></li>
+                        <li><a href="reservation.html">Reservations</a></li>
+                        <li><a href="contact.html">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>Contact Us</h3>
+                    <p>📍 123 Food Street, City</p>
+                    <p>📞 (555) 123-4567</p>
+                    <p>📧 info@deliciousbites.com</p>
+                </div>
+                <div class="footer-section">
+                    <h3>Hours</h3>
+                    <p>Mon-Fri: 11am - 10pm</p>
+                    <p>Sat-Sun: 10am - 11pm</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Delicious Bites. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/api.js"></script>
+    <script src="js/cart.js"></script>
+    
+    <script>
+        async function handleContactSubmit(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('contact-name').value;
+            const email = document.getElementById('contact-email').value;
+            const subject = document.getElementById('contact-subject').value;
+            const message = document.getElementById('contact-message').value;
+
+            const formContainer = document.getElementById('contact-form-container');
+            formContainer.innerHTML = '<div class="loading">Sending message...</div>';
+
+            const response = await API.Contact.sendMessage({ name, email, subject, message });
+            
+            if (response.success) {
+                formContainer.innerHTML = `
+                    <div class="success-message">
+                        <h3>Message Sent Successfully! 📨</h3>
+                        <br>
+                        <p>Thank you, <strong>${name}</strong>, for reaching out to us. We have received your inquiry regarding "<em>${subject}</em>" and our support team will respond to you within 24 hours.</p>
+                        <br>
+                        <a href="index.html" class="btn btn-secondary btn-block" style="text-align: center;">Go to Home</a>
+                    </div>
+                `;
+                showNotification('Your message has been sent!');
+            } else {
+                showNotification('Failed to send message. Please try again.', 'error');
+                window.location.reload();
+            }
+        }
+    </script>
+</body>
+</html>
