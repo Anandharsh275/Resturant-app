@@ -97,18 +97,8 @@
                                 <input type="date" id="res-date" required>
                             </div>
                             <div class="form-group">
-                                <label for="res-time">Time Slot</label>
-                                <select id="res-time" required>
-                                    <option value="" disabled selected>Select a time</option>
-                                    <option value="11:30 AM">11:30 AM</option>
-                                    <option value="12:30 PM">12:30 PM</option>
-                                    <option value="1:30 PM">1:30 PM</option>
-                                    <option value="5:30 PM">5:30 PM</option>
-                                    <option value="6:30 PM">6:30 PM</option>
-                                    <option value="7:30 PM">7:30 PM</option>
-                                    <option value="8:30 PM">8:30 PM</option>
-                                    <option value="9:30 PM">9:30 PM</option>
-                                </select>
+                                <label for="res-time">Choose Time</label>
+                                <input type="time" id="res-time" required style="padding: 11px 16px;">
                             </div>
                         </div>
                         <div class="form-group">
@@ -226,16 +216,36 @@
         // Timer scheduler
         const activeTimers = {};
 
+        // Helper to format 24-hour time "HH:MM" to 12-hour "HH:MM AM/PM"
+        function formatTimeTo12Hr(timeStr) {
+            if (!timeStr) return '';
+            if (timeStr.includes(' ')) return timeStr; // Already formatted
+            
+            const [hStr, mStr] = timeStr.split(':');
+            let hours = parseInt(hStr, 10);
+            const minutes = mStr;
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours ? hours : 12;
+            return `${hours}:${minutes} ${ampm}`;
+        }
+
         function scheduleReservationAlarm(name, dateStr, timeStr) {
             try {
-                // Parse date (YYYY-MM-DD) and time (e.g., "7:30 PM", "11:30 AM")
-                const [timePart, ampm] = timeStr.split(' ');
-                let [hours, minutes] = timePart.split(':');
-                hours = parseInt(hours, 10);
-                minutes = parseInt(minutes, 10);
-                
-                if (ampm === 'PM' && hours < 12) hours += 12;
-                if (ampm === 'AM' && hours === 12) hours = 0;
+                // Parse date (YYYY-MM-DD) and time (e.g., "19:30" or "7:30 PM")
+                let hours, minutes;
+                if (timeStr.includes(' ')) {
+                    const [timePart, ampm] = timeStr.split(' ');
+                    let [h, m] = timePart.split(':');
+                    hours = parseInt(h, 10);
+                    minutes = parseInt(m, 10);
+                    if (ampm === 'PM' && hours < 12) hours += 12;
+                    if (ampm === 'AM' && hours === 12) hours = 0;
+                } else {
+                    const [h, m] = timeStr.split(':');
+                    hours = parseInt(h, 10);
+                    minutes = parseInt(m, 10);
+                }
                 
                 const resDate = new Date(dateStr);
                 resDate.setHours(hours, minutes, 0, 0);
@@ -268,15 +278,17 @@
 
             playAlarmSound();
 
+            const friendlyTime = formatTimeTo12Hr(timeStr);
+
             if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
                 new Notification("🍽️ Reservation Reminder!", {
-                    body: `Hi ${name}, it is time for your booked table slot at ${timeStr}!`,
+                    body: `Hi ${name}, it is time for your booked table slot at ${friendlyTime}!`,
                     icon: "https://image.similarpng.com/very-thumbnail/2021/09/Good-food-logo-design-on-transparent-background-PNG.png"
                 });
             }
 
-            showNotification(`⏰ Alarm: Reservation at ${timeStr} starting!`);
-            alert(`⏰ Reservation Alarm!\n\nHi ${name}, it is time for your booked table slot at ${timeStr}! Welcome to Delicious Bites.`);
+            showNotification(`⏰ Alarm: Reservation at ${friendlyTime} starting!`);
+            alert(`⏰ Reservation Alarm!\n\nHi ${name}, it is time for your booked table slot at ${friendlyTime}! Welcome to Delicious Bites.`);
         }
 
         function saveAlarmToStorage(alarm) {
@@ -331,7 +343,7 @@
                         <div class="confirmation-details">
                             <p><strong>Name:</strong> ${name}</p>
                             <p><strong>Date:</strong> ${date}</p>
-                            <p><strong>Time:</strong> ${time}</p>
+                            <p><strong>Time:</strong> ${formatTimeTo12Hr(time)}</p>
                             <p><strong>Guests:</strong> ${guests} people</p>
                         </div>
                         <p class="confirmation-note">A confirmation email has been sent to ${email}. We look forward to hosting you!</p>
