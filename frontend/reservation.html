@@ -174,13 +174,139 @@
     <script src="js/cart.js"></script>
     
     <script>
-        // Set default date to tomorrow
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        const yyyy = tomorrow.getFullYear();
-        const mm = String(tomorrow.getMonth() + 1).padStart(2, '0');
-        const dd = String(tomorrow.getDate()).padStart(2, '0');
+        // Set default date to today
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
         document.getElementById('res-date').value = `${yyyy}-${mm}-${dd}`;
+        document.getElementById('res-date').min = `${yyyy}-${mm}-${dd}`;
+
+        // Initialize notification permissions and load active alarms
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
+            loadActiveAlarms();
+        });
+
+        // Synthesize alarm sound using browser Web Audio API
+        function playAlarmSound() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                
+                const playBeep = (delay, frequency, duration) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(frequency, ctx.currentTime + delay);
+                    
+                    gain.gain.setValueAtTime(0.4, ctx.currentTime + delay);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + delay + duration - 0.02);
+                    
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    
+                    osc.start(ctx.currentTime + delay);
+                    osc.stop(ctx.currentTime + delay + duration);
+                };
+                
+                // Play double beeping tone (beep beep ... beep beep)
+                playBeep(0, 987.77, 0.12);
+                playBeep(0.18, 987.77, 0.12);
+                
+                playBeep(0.5, 987.77, 0.12);
+                playBeep(0.68, 987.77, 0.12);
+            } catch (e) {
+                console.error("Failed to play Web Audio alarm:", e);
+            }
+        }
+
+        // Timer scheduler
+        const activeTimers = {};
+
+        function scheduleReservationAlarm(name, dateStr, timeStr) {
+            try {
+                // Parse date (YYYY-MM-DD) and time (e.g., "7:30 PM", "11:30 AM")
+                const [timePart, ampm] = timeStr.split(' ');
+                let [hours, minutes] = timePart.split(':');
+                hours = parseInt(hours, 10);
+                minutes = parseInt(minutes, 10);
+                
+                if (ampm === 'PM' && hours < 12) hours += 12;
+                if (ampm === 'AM' && hours === 12) hours = 0;
+                
+                const resDate = new Date(dateStr);
+                resDate.setHours(hours, minutes, 0, 0);
+                
+                const now = new Date();
+                const timeDiff = resDate.getTime() - now.getTime();
+                
+                if (timeDiff > 0) {
+                    console.log(`Alarm scheduled for ${resDate} (in ${timeDiff}ms)`);
+                    
+                    const alarmKey = `${name}_${dateStr}_${timeStr}`;
+                    if (activeTimers[alarmKey]) {
+                        clearTimeout(activeTimers[alarmKey]);
+                    }
+                    
+                    saveAlarmToStorage({ name, date: dateStr, time: timeStr, timestamp: resDate.getTime() });
+
+                    activeTimers[alarmKey] = setTimeout(() => {
+                        triggerAlarm(name, timeStr, alarmKey);
+                    }, timeDiff);
+                }
+            } catch (error) {
+                console.error("Error scheduling alarm:", error);
+            }
+        }
+
+        function triggerAlarm(name, timeStr, alarmKey) {
+            delete activeTimers[alarmKey];
+            removeAlarmFromStorage(alarmKey);
+
+            playAlarmSound();
+
+            if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+                new Notification("🍽️ Reservation Reminder!", {
+                    body: `Hi ${name}, it is time for your booked table slot at ${timeStr}!`,
+                    icon: "https://image.similarpng.com/very-thumbnail/2021/09/Good-food-logo-design-on-transparent-background-PNG.png"
+                });
+            }
+
+            showNotification(`⏰ Alarm: Reservation at ${timeStr} starting!`);
+            alert(`⏰ Reservation Alarm!\n\nHi ${name}, it is time for your booked table slot at ${timeStr}! Welcome to Delicious Bites.`);
+        }
+
+        function saveAlarmToStorage(alarm) {
+            const alarms = JSON.parse(localStorage.getItem('reservation_alarms') || '[]');
+            const exists = alarms.some(a => a.name === alarm.name && a.date === alarm.date && a.time === alarm.time);
+            if (!exists) {
+                alarms.push(alarm);
+                localStorage.setItem('reservation_alarms', JSON.stringify(alarms));
+            }
+        }
+
+        function removeAlarmFromStorage(alarmKey) {
+            const alarms = JSON.parse(localStorage.getItem('reservation_alarms') || '[]');
+            const filtered = alarms.filter(a => `${a.name}_${a.date}_${a.time}` !== alarmKey);
+            localStorage.setItem('reservation_alarms', JSON.stringify(filtered));
+        }
+
+        function loadActiveAlarms() {
+            const alarms = JSON.parse(localStorage.getItem('reservation_alarms') || '[]');
+            const now = Date.now();
+            
+            alarms.forEach(alarm => {
+                if (alarm.timestamp > now) {
+                    scheduleReservationAlarm(alarm.name, alarm.date, alarm.time);
+                } else {
+                    const alarmKey = `${alarm.name}_${alarm.date}_${alarm.time}`;
+                    removeAlarmFromStorage(alarmKey);
+                }
+            });
+        }
 
         async function handleReservationSubmit(e) {
             e.preventDefault();
@@ -213,10 +339,23 @@
                         <a href="index.html" class="btn btn-secondary btn-block" style="text-align: center;">Go to Home</a>
                     </div>
                 `;
+                
                 showNotification('Table reserved successfully!');
+                
+                // Request Notification permission if default and schedule alarm
+                if (typeof Notification !== 'undefined') {
+                    if (Notification.permission === 'granted') {
+                        scheduleReservationAlarm(name, date, time);
+                    } else if (Notification.permission !== 'denied') {
+                        Notification.requestPermission().then(permission => {
+                            if (permission === 'granted') {
+                                scheduleReservationAlarm(name, date, time);
+                            }
+                        });
+                    }
+                }
             } else {
                 showNotification('Failed to book table. Please try again.', 'error');
-                // restore form
                 window.location.reload();
             }
         }
