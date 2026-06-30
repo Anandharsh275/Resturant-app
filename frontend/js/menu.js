@@ -51,12 +51,16 @@ function displayMenuItems(items) {
 }
 
 // Filter menu by category
-function filterMenu(category) {
+function filterMenu(category, event) {
   // Update active filter button
   document.querySelectorAll('.filter-btn').forEach(btn => {
     btn.classList.remove('active');
   });
-  event.target.classList.add('active');
+  
+  const target = event ? event.target : (window.event ? window.event.target : null);
+  if (target) {
+    target.classList.add('active');
+  }
   
   // Load filtered menu
   loadMenu(category);
