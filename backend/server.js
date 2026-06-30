@@ -1,11 +1,11 @@
-// Intercept mongoose imports to use mock database instead of real MongoDB connection
-const mockMongoose = require("./config/mockMongoose");
-require.cache[require.resolve('mongoose')] = {
-  id: require.resolve('mongoose'),
-  filename: require.resolve('mongoose'),
-  loaded: true,
-  exports: mockMongoose
-};
+// // Intercept mongoose imports to use mock database instead of real MongoDB connection
+// const mockMongoose = require("./config/mockMongoose");
+// require.cache[require.resolve('mongoose')] = {
+//   id: require.resolve('mongoose'),
+//   filename: require.resolve('mongoose'),
+//   loaded: true,
+//   exports: mockMongoose
+// };
 
 const express=require("express");
 const colors=require("colors");
