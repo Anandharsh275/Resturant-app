@@ -12,8 +12,17 @@ function showNotification(message, type = 'success') {
 
   const notification = document.createElement('div');
   notification.className = `notification ${type === 'error' ? 'error' : ''}`;
-  notification.innerText = message;
+  notification.style.color = '#ffffff';
+  notification.style.fontWeight = '600';
   
+  let displayMsg = 'An error occurred. Please try again.';
+  if (typeof message === 'string' && message.trim().length > 0) {
+    displayMsg = message;
+  } else if (message && typeof message === 'object') {
+    displayMsg = message.message || JSON.stringify(message);
+  }
+  
+  notification.innerText = displayMsg;
   notificationContainer.appendChild(notification);
   
   // Trigger animation reflow
@@ -21,13 +30,13 @@ function showNotification(message, type = 'success') {
     notification.classList.add('show');
   }, 10);
 
-  // Remove notification after 3 seconds
+  // Remove notification after 4 seconds
   setTimeout(() => {
     notification.classList.remove('show');
     setTimeout(() => {
       notification.remove();
     }, 300);
-  }, 3000);
+  }, 4000);
 }
 
 // Update the cart count badge on navbar
