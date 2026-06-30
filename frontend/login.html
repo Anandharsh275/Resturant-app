@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Delicious Bites - Authentication</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
     <script src="js/api.js"></script>
     <script>
@@ -20,8 +21,8 @@
         </div>
 
         <div class="login-tabs">
-            <button id="tab-login" class="login-tab-btn active" onclick="switchTab('login')">Login</button>
-            <button id="tab-register" class="login-tab-btn" onclick="switchTab('register')">Register</button>
+            <button id="tab-register" class="login-tab-btn active" onclick="switchTab('register')">Register</button>
+            <button id="tab-login" class="login-tab-btn" onclick="switchTab('login')">Login</button>
         </div>
 
         <div id="auth-forms-container">
@@ -30,7 +31,7 @@
     </div>
 
     <script>
-        let currentTab = 'login';
+        let currentTab = 'register';
 
         // Custom notification system for the login page
         function showAuthNotification(message, type = 'success') {
