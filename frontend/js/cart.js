@@ -87,7 +87,7 @@ function removeFromCart(id) {
   cart = cart.filter(item => item.id !== id);
   localStorage.setItem('cart', JSON.stringify(cart));
   updateCartBadge();
-  showNotification(`Removed ${name} from cart.`, 'error');
+  showNotification(`Removed ${name} from cart.`, 'success');
   
   if (typeof loadCartPage === 'function') {
     loadCartPage();
@@ -99,6 +99,7 @@ function clearCart() {
   cart = [];
   localStorage.setItem('cart', JSON.stringify(cart));
   updateCartBadge();
+  showNotification('Cart cleared successfully.', 'success');
   if (typeof loadCartPage === 'function') {
     loadCartPage();
   }
