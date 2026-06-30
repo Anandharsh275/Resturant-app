@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <script>
+        if (!localStorage.getItem('auth_token')) {
+            window.location.href = 'login.html';
+        }
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Delicious Bites - Restaurant</title>
@@ -21,6 +26,7 @@
                 <li><a href="cart.html" class="cart-link">
                     🛒 Cart <span id="cart-count" class="cart-badge">0</span>
                 </a></li>
+                <li><a href="#" onclick="API.Auth.logout()">Logout</a></li>
             </ul>
         </div>
     </nav>

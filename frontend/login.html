@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delicious Bites - Authentication</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="js/api.js"></script>
+    <script>
+        // If already logged in, redirect directly to index.html
+        if (API.Auth.isLoggedIn()) {
+            window.location.href = 'index.html';
+        }
+    </script>
+</head>
+<body class="login-body">
+    <div class="login-card">
+        <div class="login-logo">
+            <h1>🍽️ Delicious Bites</h1>
+        </div>
+
+        <div class="login-tabs">
+            <button id="tab-login" class="login-tab-btn active" onclick="switchTab('login')">Login</button>
+            <button id="tab-register" class="login-tab-btn" onclick="switchTab('register')">Register</button>
+        </div>
+
+        <div id="auth-forms-container">
+            <!-- Dynamic Forms -->
+        </div>
+    </div>
+
+    <script>
+        let currentTab = 'login';
+
+        // Custom notification system for the login page
+        function showAuthNotification(message, type = 'success') {
+            let container = document.getElementById('notification-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'notification-container';
+                document.body.appendChild(container);
+            }
+            const notification = document.createElement('div');
+            notification.className = `notification ${type === 'error' ? 'error' : ''}`;
+            notification.innerText = message;
+            container.appendChild(notification);
+            
+            setTimeout(() => { notification.classList.add('show'); }, 10);
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => { notification.remove(); }, 300);
+            }, 3000);
+        }
+
+        // Render selected form tab
+        function renderForm() {
+            const container = document.getElementById('auth-forms-container');
+            if (currentTab === 'login') {
+                container.innerHTML = `
+                    <form onsubmit="handleLogin(event)">
+                        <div class="form-group">
+                            <label for="email">Email Address</label>
+                            <input type="email" id="email" required placeholder="name@example.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="password">Password</label>
+                            <input type="password" id="password" required placeholder="••••••••">
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">Login</button>
+                    </form>
+                `;
+            } else {
+                container.innerHTML = `
+                    <form onsubmit="handleRegister(event)">
+                        <div class="form-group">
+                            <label for="reg-username">Username</label>
+                            <input type="text" id="reg-username" required placeholder="John Doe">
+                        </div>
+                        <div class="form-group">
+                            <label for="reg-email">Email Address</label>
+                            <input type="email" id="reg-email" required placeholder="john@example.com">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="reg-password">Password</label>
+                                <input type="password" id="reg-password" required placeholder="••••••••">
+                            </div>
+                            <div class="form-group">
+                                <label for="reg-phone">Phone Number</label>
+                                <input type="tel" id="reg-phone" required placeholder="555-123-4567">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="reg-address">Delivery Address</label>
+                            <input type="text" id="reg-address" required placeholder="123 Food Street, City">
+                        </div>
+                        <div class="form-group">
+                            <label for="reg-answer">Security Answer: What is your favorite food?</label>
+                            <input type="text" id="reg-answer" required placeholder="e.g. Pizza">
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">Register & Login</button>
+                    </form>
+                `;
+            }
+        }
+
+        // Switch between Login and Register tabs
+        function switchTab(tab) {
+            currentTab = tab;
+            document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+            document.getElementById('tab-register').classList.toggle('active', tab === 'register');
+            renderForm();
+        }
+
+        // Handle Login Submission
+        async function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            const res = await API.Auth.login(email, password);
+            if (res.success) {
+                showAuthNotification('Logged in successfully! Redirecting...');
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 1000);
+            } else {
+                showAuthNotification(res.message || 'Login failed. Invalid credentials.', 'error');
+            }
+        }
+
+        // Handle Register Submission
+        async function handleRegister(e) {
+            e.preventDefault();
+            const username = document.getElementById('reg-username').value;
+            const email = document.getElementById('reg-email').value;
+            const password = document.getElementById('reg-password').value;
+            const phone = document.getElementById('reg-phone').value;
+            const address = document.getElementById('reg-address').value;
+            const answer = document.getElementById('reg-answer').value;
+
+            const regRes = await API.Auth.register(username, email, password, phone, address, answer);
+            if (regRes.success) {
+                showAuthNotification('Registration successful! Logging you in...');
+                const loginRes = await API.Auth.login(email, password);
+                if (loginRes.success) {
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 1000);
+                }
+            } else {
+                showAuthNotification(regRes.message || 'Registration failed.', 'error');
+            }
+        }
+
+        // Render form on load
+        document.addEventListener('DOMContentLoaded', () => {
+            renderForm();
+        });
+    </script>
+</body>
+</html>

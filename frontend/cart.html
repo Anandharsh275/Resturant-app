@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <script>
+        if (!localStorage.getItem('auth_token')) {
+            window.location.href = 'login.html';
+        }
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Delicious Bites - Cart</title>
@@ -21,6 +26,7 @@
                 <li><a href="cart.html" class="cart-link active">
                     🛒 Cart <span id="cart-count" class="cart-badge">0</span>
                 </a></li>
+                <li><a href="#" onclick="API.Auth.logout()">Logout</a></li>
             </ul>
         </div>
     </nav>
@@ -80,8 +86,6 @@
     <script src="js/cart.js"></script>
     
     <script>
-        let currentAuthMode = 'login'; // 'login' or 'register'
-
         // Render the cart page
         function loadCartPage() {
             const container = document.getElementById('cart-page-content');
@@ -118,51 +122,42 @@
             const deliveryFee = 2.99;
             const total = subtotal + deliveryFee;
 
-            let checkoutSectionHtml = '';
-            if (API.Auth.isLoggedIn()) {
-                const user = API.Auth.getUser();
-                checkoutSectionHtml = `
-                    <h2>Delivery Details</h2>
-                    <p style="margin-bottom: 1rem;">Logged in as: <strong>${user.username}</strong> (<a href="#" onclick="handleLogout(event)">Logout</a>)</p>
-                    <form id="checkout-form" onsubmit="handleCheckout(event)">
-                        <div class="form-group">
-                            <label for="address">Delivery Address</label>
-                            <input type="text" id="address" value="${user.address || ''}" required placeholder="123 Main St, Apartment 4B">
-                        </div>
-                        <div class="form-group">
-                            <label for="phone">Phone Number</label>
-                            <input type="tel" id="phone" value="${user.phone || ''}" required placeholder="(555) 000-0000">
-                        </div>
-                        <div class="form-group">
-                            <label for="notes">Special Instructions (Optional)</label>
-                            <textarea id="notes" rows="2" placeholder="Leave at the door, no onions, etc."></textarea>
-                        </div>
-                        
-                        <div class="order-summary">
-                            <div class="summary-row">
-                                <span>Subtotal</span>
-                                <span>$${subtotal.toFixed(2)}</span>
-                            </div>
-                            <div class="summary-row">
-                                <span>Delivery Fee</span>
-                                <span>$${deliveryFee.toFixed(2)}</span>
-                            </div>
-                            <div class="summary-row total">
-                                <span>Total</span>
-                                <span>$${total.toFixed(2)}</span>
-                            </div>
-                        </div>
-
-                        <button type="submit" class="btn btn-primary btn-block">Place Order</button>
-                    </form>
-                `;
-            } else {
-                checkoutSectionHtml = `
-                    <div id="auth-forms">
-                        ${currentAuthMode === 'login' ? getLoginTemplate() : getRegisterTemplate()}
+            const user = API.Auth.getUser() || { username: 'Customer', address: '', phone: '' };
+            const checkoutSectionHtml = `
+                <h2>Delivery Details</h2>
+                <p style="margin-bottom: 1rem;">Order for: <strong>${user.username}</strong></p>
+                <form id="checkout-form" onsubmit="handleCheckout(event)">
+                    <div class="form-group">
+                        <label for="address">Delivery Address</label>
+                        <input type="text" id="address" value="${user.address || ''}" required placeholder="123 Main St, Apartment 4B">
                     </div>
-                `;
-            }
+                    <div class="form-group">
+                        <label for="phone">Phone Number</label>
+                        <input type="tel" id="phone" value="${user.phone || ''}" required placeholder="(555) 000-0000">
+                    </div>
+                    <div class="form-group">
+                        <label for="notes">Special Instructions (Optional)</label>
+                        <textarea id="notes" rows="2" placeholder="Leave at the door, no onions, etc."></textarea>
+                    </div>
+                    
+                    <div class="order-summary">
+                        <div class="summary-row">
+                            <span>Subtotal</span>
+                            <span>$${subtotal.toFixed(2)}</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>Delivery Fee</span>
+                            <span>$${deliveryFee.toFixed(2)}</span>
+                        </div>
+                        <div class="summary-row total">
+                            <span>Total</span>
+                            <span>$${total.toFixed(2)}</span>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block">Place Order</button>
+                </form>
+            `;
 
             container.innerHTML = `
                 <div class="cart-layout">
@@ -183,129 +178,15 @@
             `;
         }
 
-        // Templates for authentication
-        function getLoginTemplate() {
-            return `
-                <h2>Login to Checkout</h2>
-                <p style="margin-bottom: 1.5rem;">Please log in to your account to place the order.</p>
-                <form onsubmit="handleLoginSubmit(event)">
-                    <div class="form-group">
-                        <label for="login-email">Email</label>
-                        <input type="email" id="login-email" required placeholder="email@example.com">
-                    </div>
-                    <div class="form-group">
-                        <label for="login-password">Password</label>
-                        <input type="password" id="login-password" required placeholder="••••••••">
-                    </div>
-                    <button type="submit" class="btn btn-primary btn-block">Login</button>
-                </form>
-                <p style="margin-top: 1.5rem; text-align: center;">
-                    Don't have an account? <a href="#" onclick="toggleAuthMode('register', event)">Register Here</a>
-                </p>
-            `;
-        }
-
-        function getRegisterTemplate() {
-            return `
-                <h2>Register Account</h2>
-                <p style="margin-bottom: 1.5rem;">Create a new account to track and place orders.</p>
-                <form onsubmit="handleRegisterSubmit(event)">
-                    <div class="form-group">
-                        <label for="reg-username">Username</label>
-                        <input type="text" id="reg-username" required placeholder="John Doe">
-                    </div>
-                    <div class="form-group">
-                        <label for="reg-email">Email</label>
-                        <input type="email" id="reg-email" required placeholder="john@example.com">
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="reg-password">Password</label>
-                            <input type="password" id="reg-password" required placeholder="••••••••">
-                        </div>
-                        <div class="form-group">
-                            <label for="reg-phone">Phone</label>
-                            <input type="tel" id="reg-phone" required placeholder="555-123-4567">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="reg-address">Address</label>
-                        <input type="text" id="reg-address" required placeholder="123 Food Street, City">
-                    </div>
-                    <div class="form-group">
-                        <label for="reg-answer">Security Question: What is your favorite food?</label>
-                        <input type="text" id="reg-answer" required placeholder="e.g. Pizza">
-                    </div>
-                    <button type="submit" class="btn btn-primary btn-block">Register & Login</button>
-                </form>
-                <p style="margin-top: 1.5rem; text-align: center;">
-                    Already have an account? <a href="#" onclick="toggleAuthMode('login', event)">Login Here</a>
-                </p>
-            `;
-        }
-
-        // Toggle login / register views
-        function toggleAuthMode(mode, e) {
-            if (e) e.preventDefault();
-            currentAuthMode = mode;
-            loadCartPage();
-        }
-
-        // Handle Login
-        async function handleLoginSubmit(e) {
-            e.preventDefault();
-            const email = document.getElementById('login-email').value;
-            const password = document.getElementById('login-password').value;
-
-            const res = await API.Auth.login(email, password);
-            if (res.success) {
-                showNotification('Logged in successfully!');
-                loadCartPage();
-            } else {
-                showNotification(res.message || 'Login failed. Invalid credentials.', 'error');
-            }
-        }
-
-        // Handle Register
-        async function handleRegisterSubmit(e) {
-            e.preventDefault();
-            const username = document.getElementById('reg-username').value;
-            const email = document.getElementById('reg-email').value;
-            const password = document.getElementById('reg-password').value;
-            const phone = document.getElementById('reg-phone').value;
-            const address = document.getElementById('reg-address').value;
-            const answer = document.getElementById('reg-answer').value;
-
-            const regRes = await API.Auth.register(username, email, password, phone, address, answer);
-            if (regRes.success) {
-                showNotification('Registration successful! Logging you in...');
-                // Automatically log in the user
-                const loginRes = await API.Auth.login(email, password);
-                if (loginRes.success) {
-                    loadCartPage();
-                }
-            } else {
-                showNotification(regRes.message || 'Registration failed.', 'error');
-            }
-        }
-
-        // Handle Logout
-        function handleLogout(e) {
-            if (e) e.preventDefault();
-            API.Auth.logout();
-        }
-
         // Handle checkout order placement
         async function handleCheckout(e) {
             e.preventDefault();
             
-            // Call placeorder API
             const response = await API.Order.place(cart);
             if (response.success) {
                 showNotification('Order placed successfully! 🍕🍳');
-                clearCart(); // clears local cart and reloads
+                clearCart();
                 
-                // Show order success message
                 const container = document.getElementById('cart-page-content');
                 container.innerHTML = `
                     <div class="success-message text-center" style="background: var(--success-color); color: white; padding: 3rem; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
