@@ -134,7 +134,11 @@
             if (res.success) {
                 showAuthNotification('Logged in successfully! Redirecting...');
                 setTimeout(() => {
-                    window.location.href = 'index.html';
+                    if (res.user && res.user.usertype === 'admin') {
+                        window.location.href = 'admin-dashboard.html';
+                    } else {
+                        window.location.href = 'index.html';
+                    }
                 }, 1000);
             } else {
                 showAuthNotification(res.message || 'Login failed. Invalid credentials.', 'error');
@@ -157,7 +161,11 @@
                 const loginRes = await API.Auth.login(email, password);
                 if (loginRes.success) {
                     setTimeout(() => {
-                        window.location.href = 'index.html';
+                        if (loginRes.user && loginRes.user.usertype === 'admin') {
+                            window.location.href = 'admin-dashboard.html';
+                        } else {
+                            window.location.href = 'index.html';
+                        }
                     }, 1000);
                 }
             } else {
