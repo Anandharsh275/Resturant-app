@@ -45,7 +45,9 @@ app.use('/api/v1/resturant',require("./routes/resturantRouters"));
 //category route
 app.use('/api/v1/category',require("./routes/categoryRouters"));
 //food route
-app.use('/api/v1/food',require("./routes/foodRouters"))
+app.use('/api/v1/food',require("./routes/foodRouters"));
+//reservation route
+app.use('/api/v1/reservation',require("./routes/reservationRouters"));
 //URL -> http://localhost:8080 
 // if we have only slash then upper url will be assumed and we can write further slash to add something to the url also
 app.get("/",(req,res)=>{

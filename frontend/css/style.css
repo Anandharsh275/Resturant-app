@@ -841,3 +841,42 @@ body {
     box-shadow: 0 6px 20px rgba(255, 107, 53, 0.4);
     background: linear-gradient(135deg, #ffa066, #ff7b47);
 }
+
+/* Global Status Badges & Admin Utilities */
+.status-badge {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: capitalize;
+    display: inline-block;
+    letter-spacing: 0.3px;
+}
+
+/* Order Status Badges */
+.badge-preparing { background-color: #ffe8d6; color: #d05a00; border: 1px solid rgba(208, 90, 0, 0.15); }
+.badge-prepare { background-color: #e0f2fe; color: #0369a1; border: 1px solid rgba(3, 105, 161, 0.15); }
+.badge-on-the-way { background-color: #fef3c7; color: #b45309; border: 1px solid rgba(180, 83, 9, 0.15); }
+.badge-deliverd { background-color: #dcfce7; color: #15803d; border: 1px solid rgba(21, 128, 61, 0.15); }
+.badge-cancelled { background-color: #fee2e2; color: #b91c1c; border: 1px solid rgba(185, 28, 28, 0.15); }
+
+/* Reservation Status Badges */
+.badge-pending { background-color: #fef3c7; color: #b45309; border: 1px solid rgba(180, 83, 9, 0.15); }
+.badge-approved { background-color: #dcfce7; color: #15803d; border: 1px solid rgba(21, 128, 61, 0.15); }
+.badge-rejected { background-color: #fee2e2; color: #b91c1c; border: 1px solid rgba(185, 28, 28, 0.15); }
+
+/* Custom Scrollbar for dashboard panels */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.1);
+}
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 107, 53, 0.4);
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 107, 53, 0.6);
+}

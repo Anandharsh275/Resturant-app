@@ -86,6 +86,11 @@ const API = {
           price: item.price,
           image: item.imageUrl,
           category: item.catgeory,
+          resturnat: item.resturnat, // Need to carry this over for CRUD edits
+          foodTags: item.foodTags,
+          isAvailabe: item.isAvailabe,
+          rating: item.rating,
+          code: item.code,
           spicyLevel: item.foodTags && item.foodTags.toLowerCase().includes('spicy') ? 2 : 0
         }));
 
@@ -105,6 +110,26 @@ const API = {
         success: false,
         message: response.message || 'Failed to fetch menu items.'
       };
+    },
+
+    async create(foodDetails) {
+      return API.request('/food/create', {
+        method: 'POST',
+        body: JSON.stringify(foodDetails)
+      });
+    },
+
+    async update(id, foodDetails) {
+      return API.request(`/food/update/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(foodDetails)
+      });
+    },
+
+    async delete(id) {
+      return API.request(`/food/delete/${id}`, {
+        method: 'DELETE'
+      });
     }
   },
 
@@ -112,6 +137,13 @@ const API = {
   Category: {
     async getAll() {
       return API.request('/category/getAll');
+    }
+  },
+
+  // Restaurant endpoints
+  Restaurant: {
+    async getAll() {
+      return API.request('/resturant/getAll');
     }
   },
 
@@ -129,29 +161,45 @@ const API = {
         method: 'POST',
         body: JSON.stringify({ cart: cartData }),
       });
+    },
+
+    async getUserOrders() {
+      return API.request('/food/user-orders');
+    },
+
+    async getAllOrders() {
+      return API.request('/food/all-orders');
+    },
+
+    async updateStatus(id, status) {
+      return API.request(`/food/orderStatus/${id}`, {
+        method: 'POST',
+        body: JSON.stringify({ status })
+      });
     }
   },
 
-  // Reservations (mocked since no backend endpoint exists)
+  // Reservations
   Reservation: {
     async book(reservationDetails) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          // Store locally to simulate database
-          const reservations = JSON.parse(localStorage.getItem('reservations') || '[]');
-          reservations.push({
-            id: Date.now().toString(),
-            ...reservationDetails,
-            status: 'pending',
-            createdAt: new Date().toISOString()
-          });
-          localStorage.setItem('reservations', JSON.stringify(reservations));
-          
-          resolve({
-            success: true,
-            message: 'Reservation booked successfully! We will confirm via email.'
-          });
-        }, 800);
+      return API.request('/reservation/book', {
+        method: 'POST',
+        body: JSON.stringify(reservationDetails)
+      });
+    },
+
+    async getUserReservations() {
+      return API.request('/reservation/user-reservations');
+    },
+
+    async getAll() {
+      return API.request('/reservation/all');
+    },
+
+    async updateStatus(id, status) {
+      return API.request(`/reservation/status/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ status })
       });
     }
   },
@@ -178,3 +226,45 @@ const API = {
     }
   }
 };
+
+// Automatically update navigation menu based on user role and login status
+document.addEventListener('DOMContentLoaded', () => {
+  const user = API.Auth.getUser();
+  if (user) {
+    const navLinks = document.querySelector('.nav-links');
+    if (navLinks) {
+      // Check if we already injected
+      if (!navLinks.querySelector('a[href="orders.html"]')) {
+        const cartItem = navLinks.querySelector('.cart-link');
+        const cartLi = cartItem ? cartItem.parentElement : null;
+        
+        // 1. My Dashboard Link
+        const dashboardLi = document.createElement('li');
+        const isActive = window.location.pathname.endsWith('orders.html') ? 'class="active"' : '';
+        dashboardLi.innerHTML = `<a href="orders.html" ${isActive}>My Dashboard</a>`;
+        
+        if (cartLi) {
+          navLinks.insertBefore(dashboardLi, cartLi);
+        } else {
+          navLinks.appendChild(dashboardLi);
+        }
+      }
+
+      // 2. Admin Panel Link
+      if (user.usertype === 'admin' && !navLinks.querySelector('a[href="admin-dashboard.html"]')) {
+        const dashboardItem = navLinks.querySelector('a[href="orders.html"]');
+        const dashboardLi = dashboardItem ? dashboardItem.parentElement : null;
+        
+        const adminLi = document.createElement('li');
+        const isActive = window.location.pathname.endsWith('admin-dashboard.html') ? 'class="active"' : '';
+        adminLi.innerHTML = `<a href="admin-dashboard.html" ${isActive} style="color: var(--primary-color); font-weight: 700;">🔑 Admin Panel</a>`;
+        
+        if (dashboardLi) {
+          navLinks.insertBefore(adminLi, dashboardLi);
+        } else {
+          navLinks.appendChild(adminLi);
+        }
+      }
+    }
+  }
+});

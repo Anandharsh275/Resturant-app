@@ -10,6 +10,8 @@ const {
   deleteFoodController,
   placeOrderController,
   orderStatusController,
+  getUserOrdersController,
+  getAllOrdersController,
 } = require("../controllers/foodcontrollers");
 const adminMiddleware = require("../middleware/adminMiddleware.js");
 
@@ -36,6 +38,12 @@ router.delete("/delete/:id", authMiddleware, deleteFoodController);
 
 // PLACE ORDER
 router.post("/placeorder", authMiddleware, placeOrderController);
+
+// GET USER ORDERS
+router.get("/user-orders", authMiddleware, getUserOrdersController);
+
+// GET ALL ORDERS (ADMIN)
+router.get("/all-orders", authMiddleware, adminMiddleware, getAllOrdersController);
 
 // ORDER STATUS
 router.post(

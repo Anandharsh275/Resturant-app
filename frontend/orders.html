@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script>
+        if (!localStorage.getItem('auth_token')) {
+            window.location.href = 'login.html';
+        }
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delicious Bites - My Orders & Reservations</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 20px;
+        }
+        
+        .dashboard-header {
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .dashboard-header h2 {
+            font-size: 2rem;
+            color: var(--dark-color);
+        }
+
+        .tabs-nav {
+            display: flex;
+            gap: 1rem;
+            border-bottom: 2px solid var(--border-color);
+            margin-bottom: 2rem;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            color: var(--text-light);
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .tab-btn:hover {
+            color: var(--primary-color);
+        }
+
+        .tab-btn.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+        }
+
+        .dashboard-tab-content {
+            display: none;
+        }
+
+        .dashboard-tab-content.active {
+            display: block;
+        }
+
+        /* Order & Reservation Cards */
+        .record-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(0,0,0,0.05);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .record-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+        }
+
+        .record-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .record-id {
+            font-weight: 700;
+            color: var(--secondary-color);
+        }
+
+        .record-date {
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+
+        .record-body {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .record-details {
+            flex: 2;
+            min-width: 250px;
+        }
+
+        .food-item-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+        }
+
+        .record-summary {
+            flex: 1;
+            min-width: 150px;
+            text-align: right;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            justify-content: space-between;
+            height: 100%;
+        }
+
+        .record-total {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        /* Badges */
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: capitalize;
+            display: inline-block;
+        }
+
+        /* Order status colors */
+        .badge-preparing { background-color: #ffe8d6; color: #d05a00; }
+        .badge-prepare { background-color: #e0f2fe; color: #0369a1; }
+        .badge-on-the-way { background-color: #fef3c7; color: #b45309; }
+        .badge-deliverd { background-color: #dcfce7; color: #15803d; }
+        .badge-cancelled { background-color: #fee2e2; color: #b91c1c; }
+
+        /* Reservation status colors */
+        .badge-pending { background-color: #fef3c7; color: #b45309; }
+        .badge-approved { background-color: #dcfce7; color: #15803d; }
+        .badge-rejected { background-color: #fee2e2; color: #b91c1c; }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            color: var(--text-light);
+        }
+
+        .empty-icon {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .empty-state h3 {
+            color: var(--dark-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-state p {
+            margin-bottom: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="logo">
+                <h1>🍽️ Delicious Bites</h1>
+            </div>
+            <ul class="nav-links" id="nav-links-container">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="menu.html">Menu</a></li>
+                <li><a href="reservation.html">Reservations</a></li>
+                <li><a href="contact.html">Contact</a></li>
+                <li><a href="cart.html" class="cart-link">
+                    🛒 Cart <span id="cart-count" class="cart-badge">0</span>
+                </a></li>
+                <li><a href="#" onclick="API.Auth.logout()">Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <header class="page-header">
+        <div class="container">
+            <h1>My Dashboard</h1>
+            <p>Track your orders, status updates, and dining reservations</p>
+        </div>
+    </header>
+
+    <div class="dashboard-container">
+        <div class="dashboard-header">
+            <div>
+                <h2 id="welcome-message">Welcome back!</h2>
+                <p style="color: var(--text-light);" id="user-email-subtitle">Manage your dining experience</p>
+            </div>
+        </div>
+
+        <div class="tabs-nav">
+            <button class="tab-btn active" onclick="switchTab('orders')">My Orders</button>
+            <button class="tab-btn" onclick="switchTab('reservations')">My Reservations</button>
+        </div>
+
+        <!-- Orders Content -->
+        <div id="orders-tab" class="dashboard-tab-content active">
+            <div id="orders-list">
+                <div class="loading">Loading your order history...</div>
+            </div>
+        </div>
+
+        <!-- Reservations Content -->
+        <div id="reservations-tab" class="dashboard-tab-content">
+            <div id="reservations-list">
+                <div class="loading">Loading your table reservations...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>Delicious Bites</h3>
+                    <p>Bringing joy through great food since 2020</p>
+                </div>
+                <div class="footer-section">
+                    <h3>Quick Links</h3>
+                    <ul>
+                        <li><a href="menu.html">Menu</a></li>
+                        <li><a href="reservation.html">Reservations</a></li>
+                        <li><a href="contact.html">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>Contact Us</h3>
+                    <p>📍 123 Food Street, City</p>
+                    <p>📞 (555) 123-4567</p>
+                    <p>📧 info@deliciousbites.com</p>
+                </div>
+                <div class="footer-section">
+                    <h3>Hours</h3>
+                    <p>Mon-Fri: 11am - 10pm</p>
+                    <p>Sat-Sun: 10am - 11pm</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Delicious Bites. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/api.js"></script>
+    <script src="js/cart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = API.Auth.getUser();
+            if (user) {
+                document.getElementById('welcome-message').innerText = `Welcome back, ${user.username}!`;
+                document.getElementById('user-email-subtitle').innerText = `${user.email} • ${user.phone}`;
+            }
+
+            loadUserOrders();
+            loadUserReservations();
+        });
+
+        function switchTab(tabName) {
+            // Remove active classes
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.dashboard-tab-content').forEach(content => content.classList.remove('active'));
+
+            // Add active classes to selected tab
+            if (tabName === 'orders') {
+                event.target.classList.add('active');
+                document.getElementById('orders-tab').classList.add('active');
+            } else {
+                event.target.classList.add('active');
+                document.getElementById('reservations-tab').classList.add('active');
+            }
+        }
+
+        async function loadUserOrders() {
+            const container = document.getElementById('orders-list');
+            const res = await API.Order.getUserOrders();
+            
+            if (res.success && res.orders && res.orders.length > 0) {
+                let html = '';
+                res.orders.forEach(order => {
+                    const date = new Date(order.createdAt).toLocaleString();
+                    const statusClass = `badge-${order.status.replace(/\s+/g, '-')}`;
+                    
+                    let foodsList = '';
+                    if (order.foods && order.foods.length > 0) {
+                        order.foods.forEach(food => {
+                            foodsList += `
+                                <div class="food-item-row">
+                                    <span>🍽️ ${food.title}</span>
+                                    <span>$${food.price.toFixed(2)}</span>
+                                </div>
+                            `;
+                        });
+                    } else {
+                        foodsList = '<div style="color: var(--text-light); font-style: italic;">No items details available</div>';
+                    }
+
+                    html += `
+                        <div class="record-card">
+                            <div class="record-header">
+                                <div>
+                                    <span class="record-id">Order ID: #${order._id.substring(order._id.length - 6).toUpperCase()}</span>
+                                    <div class="record-date">${date}</div>
+                                </div>
+                                <span class="status-badge ${statusClass}">${order.status}</span>
+                            </div>
+                            <div class="record-body">
+                                <div class="record-details">
+                                    ${foodsList}
+                                </div>
+                                <div class="record-summary">
+                                    <div class="record-total">$${(order.payment || 0).toFixed(2)}</div>
+                                    <div style="font-size: 0.8rem; color: var(--text-light);">Paid via COD / Online</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">🛍️</div>
+                        <h3>No Orders Yet</h3>
+                        <p>It looks like you haven't placed any orders yet. Check out our menu!</p>
+                        <a href="menu.html" class="btn btn-primary">Order Now</a>
+                    </div>
+                `;
+            }
+        }
+
+        async function loadUserReservations() {
+            const container = document.getElementById('reservations-list');
+            const res = await API.Reservation.getUserReservations();
+
+            if (res.success && res.reservations && res.reservations.length > 0) {
+                let html = '';
+                res.reservations.forEach(resv => {
+                    const createdDate = new Date(resv.createdAt).toLocaleDateString();
+                    const statusClass = `badge-${resv.status}`;
+                    
+                    // Format date & time nicely
+                    const resvDate = new Date(resv.date).toLocaleDateString('en-US', {
+                        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+                    });
+                    
+                    // Time format
+                    let friendlyTime = resv.time;
+                    if (resv.time && resv.time.includes(':')) {
+                        const [h, m] = resv.time.split(':');
+                        let hrs = parseInt(h, 10);
+                        const ampm = hrs >= 12 ? 'PM' : 'AM';
+                        hrs = hrs % 12;
+                        hrs = hrs ? hrs : 12;
+                        friendlyTime = `${hrs}:${m} ${ampm}`;
+                    }
+
+                    html += `
+                        <div class="record-card">
+                            <div class="record-header">
+                                <div>
+                                    <span class="record-id">Table for ${resv.guests} ${parseInt(resv.guests) === 1 ? 'Person' : 'People'}</span>
+                                    <div class="record-date">Booked on ${createdDate}</div>
+                                </div>
+                                <span class="status-badge ${statusClass}">${resv.status}</span>
+                            </div>
+                            <div class="record-body">
+                                <div class="record-details">
+                                    <div style="margin-bottom: 0.5rem;">📅 <strong>Date:</strong> ${resvDate}</div>
+                                    <div style="margin-bottom: 0.5rem;">⏰ <strong>Time Slot:</strong> ${friendlyTime}</div>
+                                    ${resv.notes ? `<div style="font-style: italic; color: var(--text-light); font-size: 0.9rem;">💬 Notes: "${resv.notes}"</div>` : ''}
+                                </div>
+                                <div class="record-summary">
+                                    <div style="font-size: 0.9rem; font-weight: 600;">Contact Details</div>
+                                    <div style="font-size: 0.8rem; color: var(--text-light);">${resv.name}</div>
+                                    <div style="font-size: 0.8rem; color: var(--text-light);">${resv.phone}</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">📅</div>
+                        <h3>No Reservations Yet</h3>
+                        <p>Planning a special meal? Book your table in advance!</p>
+                        <a href="reservation.html" class="btn btn-primary">Book Table</a>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

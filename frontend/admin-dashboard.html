@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script>
+        // Restrict page to admins only
+        try {
+            const token = localStorage.getItem('auth_token');
+            const user = JSON.parse(localStorage.getItem('auth_user') || '{}');
+            if (!token || user.usertype !== 'admin') {
+                window.location.href = 'index.html';
+            }
+        } catch (e) {
+            window.location.href = 'login.html';
+        }
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delicious Bites - Admin Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        :root {
+            --admin-dark: #0f172a;
+            --admin-card: rgba(30, 41, 59, 0.7);
+            --admin-border: rgba(255, 255, 255, 0.08);
+            --admin-text: #f1f5f9;
+            --admin-text-muted: #94a3b8;
+        }
+
+        body.admin-body {
+            background: radial-gradient(circle at top right, rgba(255, 107, 53, 0.08), transparent),
+                        radial-gradient(circle at bottom left, rgba(0, 78, 137, 0.08), transparent),
+                        var(--admin-dark);
+            color: var(--admin-text);
+            font-family: 'Outfit', 'Segoe UI', system-ui, sans-serif;
+            min-height: 100vh;
+        }
+
+        /* Navbar overwrite for dark dashboard look */
+        .admin-nav {
+            background: rgba(15, 23, 42, 0.8) !important;
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--admin-border);
+        }
+        .admin-nav h1 {
+            background: linear-gradient(135deg, #ff8c42, #ff6b35);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .admin-nav a {
+            color: var(--admin-text) !important;
+        }
+        .admin-nav a:hover, .admin-nav a.active {
+            color: var(--primary-color) !important;
+        }
+
+        .dashboard-wrapper {
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            min-height: calc(100vh - 74px);
+        }
+
+        /* Sidebar Navigation */
+        .admin-sidebar {
+            background: rgba(15, 23, 42, 0.5);
+            border-right: 1px solid var(--admin-border);
+            padding: 2rem 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .sidebar-btn {
+            background: none;
+            border: none;
+            color: var(--admin-text-muted);
+            padding: 12px 20px;
+            border-radius: 10px;
+            text-align: left;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-btn:hover {
+            color: var(--admin-text);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .sidebar-btn.active {
+            color: #fff;
+            background: linear-gradient(135deg, #ff8c42, #ff6b35);
+            box-shadow: 0 4px 12px rgba(255, 107, 53, 0.15);
+        }
+
+        /* Main Workspace */
+        .admin-main {
+            padding: 2rem 3rem;
+            overflow-y: auto;
+        }
+
+        .admin-section {
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .admin-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .section-header h2 {
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .stats-card {
+            background: var(--admin-card);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--admin-border);
+            padding: 1.5rem;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            gap: 1.2rem;
+        }
+
+        .stats-icon {
+            font-size: 2.2rem;
+            background: rgba(255, 107, 53, 0.1);
+            color: var(--primary-color);
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .stats-info h4 {
+            color: var(--admin-text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 0.25rem;
+            font-weight: 500;
+        }
+
+        .stats-info p {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #fff;
+        }
+
+        /* Glassmorphism Table & Panels */
+        .admin-panel {
+            background: var(--admin-card);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--admin-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow-x: auto;
+        }
+
+        table.admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        table.admin-table th {
+            padding: 1rem;
+            border-bottom: 1px solid var(--admin-border);
+            color: var(--admin-text-muted);
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        table.admin-table td {
+            padding: 1.2rem 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            color: var(--admin-text);
+            font-size: 0.95rem;
+        }
+
+        table.admin-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Forms / Inputs inside Dark Dashboard */
+        .admin-form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .admin-form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--admin-text-muted);
+            font-size: 0.9rem;
+        }
+
+        .admin-form-group input,
+        .admin-form-group select,
+        .admin-form-group textarea {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--admin-border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            color: #fff;
+            font-family: inherit;
+            font-size: 0.95rem;
+            transition: border-color 0.3s;
+        }
+
+        .admin-form-group input:focus,
+        .admin-form-group select:focus,
+        .admin-form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        /* Status colors */
+        .admin-select-status {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--admin-border);
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        /* Modals */
+        .admin-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(8px);
+            z-index: 3000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .admin-modal.open {
+            display: flex;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-content {
+            background: #1e293b;
+            border: 1px solid var(--admin-border);
+            border-radius: 20px;
+            width: 100%;
+            max-width: 600px;
+            padding: 2.5rem;
+            position: relative;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 20px;
+            right: 25px;
+            font-size: 1.8rem;
+            color: var(--admin-text-muted);
+            cursor: pointer;
+            background: none;
+            border: none;
+        }
+
+        .close-modal:hover {
+            color: #fff;
+        }
+
+        /* Action buttons */
+        .btn-admin-action {
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+            margin-right: 5px;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-admin-edit {
+            background: rgba(56, 189, 248, 0.1);
+            color: #38bdf8;
+            border: 1px solid rgba(56, 189, 248, 0.2);
+        }
+        .btn-admin-edit:hover {
+            background: #38bdf8;
+            color: #fff;
+        }
+
+        .btn-admin-delete {
+            background: rgba(244, 63, 94, 0.1);
+            color: #f43f5e;
+            border: 1px solid rgba(244, 63, 94, 0.2);
+        }
+        .btn-admin-delete:hover {
+            background: #f43f5e;
+            color: #fff;
+        }
+
+        .btn-admin-approve {
+            background: rgba(34, 197, 94, 0.1);
+            color: #22c55e;
+            border: 1px solid rgba(34, 197, 94, 0.2);
+        }
+        .btn-admin-approve:hover {
+            background: #22c55e;
+            color: #fff;
+        }
+
+        .btn-admin-reject {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+        .btn-admin-reject:hover {
+            background: #ef4444;
+            color: #fff;
+        }
+    </style>
+</head>
+<body class="admin-body">
+    <!-- Navigation -->
+    <nav class="navbar admin-nav">
+        <div class="container">
+            <div class="logo">
+                <h1>🍽️ Admin Panel</h1>
+            </div>
+            <ul class="nav-links">
+                <li><a href="index.html">View Storefront</a></li>
+                <li><a href="menu.html">Menu</a></li>
+                <li><a href="orders.html">My Dashboard</a></li>
+                <li><a href="#" onclick="API.Auth.logout()">Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="dashboard-wrapper">
+        <!-- Sidebar -->
+        <aside class="admin-sidebar">
+            <button class="sidebar-btn active" onclick="switchSection('dashboard')">📊 Dashboard</button>
+            <button class="sidebar-btn" onclick="switchSection('menu')">🍕 Menu Items</button>
+            <button class="sidebar-btn" onclick="switchSection('orders')">🛍️ Orders</button>
+            <button class="sidebar-btn" onclick="switchSection('reservations')">📅 Table Bookings</button>
+        </aside>
+
+        <!-- Main Workspace -->
+        <main class="admin-main">
+
+            <!-- 1. DASHBOARD OVERVIEW -->
+            <section id="dashboard-section" class="admin-section active">
+                <div class="section-header">
+                    <h2>Statistics Overview</h2>
+                </div>
+                <div class="stats-grid">
+                    <div class="stats-card">
+                        <div class="stats-icon">💰</div>
+                        <div class="stats-info">
+                            <h4>Total Sales</h4>
+                            <p id="stat-revenue">$0.00</p>
+                        </div>
+                    </div>
+                    <div class="stats-card">
+                        <div class="stats-icon">📦</div>
+                        <div class="stats-info">
+                            <h4>Pending Orders</h4>
+                            <p id="stat-orders">0</p>
+                        </div>
+                    </div>
+                    <div class="stats-card">
+                        <div class="stats-icon">🗓️</div>
+                        <div class="stats-info">
+                            <h4>Pending Bookings</h4>
+                            <p id="stat-reservations">0</p>
+                        </div>
+                    </div>
+                    <div class="stats-card">
+                        <div class="stats-icon">🍔</div>
+                        <div class="stats-info">
+                            <h4>Menu Items</h4>
+                            <p id="stat-menu-items">0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <h3 style="margin-bottom:1rem; font-weight:700;">Recent Orders Feed</h3>
+                <div class="admin-panel">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Buyer</th>
+                                <th>Date/Time</th>
+                                <th>Price</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recent-orders-body">
+                            <tr><td colspan="5" class="loading">Loading stats...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- 2. MENU MANAGEMENT -->
+            <section id="menu-section" class="admin-section">
+                <div class="section-header">
+                    <h2>Manage Food Menu</h2>
+                    <button class="btn btn-primary" onclick="openAddMenuModal()">➕ Add Food Item</button>
+                </div>
+                <div class="admin-panel">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Image</th>
+                                <th>Title</th>
+                                <th>Category</th>
+                                <th>Price</th>
+                                <th>Rating</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="menu-table-body">
+                            <tr><td colspan="7" class="loading">Loading menu items...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- 3. ORDER MANAGEMENT -->
+            <section id="orders-section" class="admin-section">
+                <div class="section-header">
+                    <h2>Manage Customer Orders</h2>
+                </div>
+                <div class="admin-panel">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Customer</th>
+                                <th>Ordered Items</th>
+                                <th>Total</th>
+                                <th>Order Time</th>
+                                <th>Status Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="orders-table-body">
+                            <tr><td colspan="6" class="loading">Loading orders...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- 4. RESERVATIONS MANAGEMENT -->
+            <section id="reservations-section" class="admin-section">
+                <div class="section-header">
+                    <h2>Manage Table Bookings</h2>
+                </div>
+                <div class="admin-panel">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Guest</th>
+                                <th>Contact</th>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <th>Guests</th>
+                                <th>Notes</th>
+                                <th>State</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reservations-table-body">
+                            <tr><td colspan="8" class="loading">Loading bookings...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- ADD/EDIT MENU ITEM MODAL -->
+    <div id="food-modal" class="admin-modal">
+        <div class="modal-content">
+            <button class="close-modal" onclick="closeFoodModal()">&times;</button>
+            <h2 id="modal-title" style="margin-bottom: 1.5rem; font-weight:700;">Add New Food Item</h2>
+            <form id="food-form" onsubmit="handleFoodFormSubmit(event)">
+                <input type="hidden" id="food-edit-id">
+                
+                <div class="admin-form-group">
+                    <label for="food-title">Food Title *</label>
+                    <input type="text" id="food-title" required placeholder="e.g. Pepperoni Pizza">
+                </div>
+
+                <div class="admin-form-group">
+                    <label for="food-description">Description *</label>
+                    <textarea id="food-description" required rows="3" placeholder="Tell customers about this dish..."></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="admin-form-group">
+                        <label for="food-price">Price ($) *</label>
+                        <input type="number" step="0.01" id="food-price" required placeholder="9.99">
+                    </div>
+                    <div class="admin-form-group">
+                        <label for="food-rating">Rating (1-5)</label>
+                        <input type="number" step="0.1" min="1" max="5" id="food-rating" value="5.0">
+                    </div>
+                </div>
+
+                <div class="admin-form-group">
+                    <label for="food-imageUrl">Image URL</label>
+                    <input type="url" id="food-imageUrl" placeholder="https://unsplash.com/... or leave blank">
+                </div>
+
+                <div class="form-row">
+                    <div class="admin-form-group">
+                        <label for="food-category">Category *</label>
+                        <select id="food-category" required>
+                            <option value="">Select Category</option>
+                            <!-- Dynamic Categories -->
+                        </select>
+                    </div>
+                    <div class="admin-form-group">
+                        <label for="food-restaurant">Restaurant *</label>
+                        <select id="food-restaurant" required>
+                            <option value="">Select Restaurant</option>
+                            <!-- Dynamic Restaurants -->
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="admin-form-group">
+                        <label for="food-tags">Tags (comma separated)</label>
+                        <input type="text" id="food-tags" placeholder="veg, spicy, hot">
+                    </div>
+                    <div class="admin-form-group">
+                        <label for="food-code">Item Code</label>
+                        <input type="text" id="food-code" placeholder="PIZZA10">
+                    </div>
+                </div>
+
+                <div class="admin-form-group">
+                    <label for="food-available">Is Available in Menu?</label>
+                    <select id="food-available">
+                        <option value="true" selected>Yes, In Stock</option>
+                        <option value="false">No, Out of Stock</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block" style="margin-top: 1rem;">Save Food Item</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notification System -->
+    <div id="notification-container"></div>
+
+    <script src="js/api.js"></script>
+    <script>
+        // Tab switching
+        function switchSection(sectionId) {
+            document.querySelectorAll('.sidebar-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.admin-section').forEach(sec => sec.classList.remove('active'));
+
+            event.currentTarget.classList.add('active');
+            document.getElementById(`${sectionId}-section`).classList.add('active');
+
+            // Load section details
+            if (sectionId === 'dashboard') loadStats();
+            else if (sectionId === 'menu') loadMenuData();
+            else if (sectionId === 'orders') loadOrdersData();
+            else if (sectionId === 'reservations') loadReservationsData();
+        }
+
+        // Custom notification system
+        function showNotification(message, type = 'success') {
+            const container = document.getElementById('notification-container');
+            const notification = document.createElement('div');
+            notification.className = `notification ${type === 'error' ? 'error' : ''}`;
+            notification.style.color = '#ffffff';
+            notification.style.fontWeight = '600';
+            notification.innerText = message;
+            container.appendChild(notification);
+            
+            setTimeout(() => { notification.classList.add('show'); }, 10);
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => { notification.remove(); }, 300);
+            }, 4000);
+        }
+
+        // Load Categories and Restaurants for Modal Dropdowns
+        let categoriesList = [];
+        let restaurantsList = [];
+
+        async function initDropdowns() {
+            try {
+                const catRes = await API.Category.getAll();
+                if (catRes.success && catRes.categories) {
+                    categoriesList = catRes.categories;
+                    const catSelect = document.getElementById('food-category');
+                    catSelect.innerHTML = '<option value="">Select Category</option>' + 
+                        categoriesList.map(c => `<option value="${c.title}">${c.title}</option>`).join('');
+                }
+
+                const restRes = await API.Restaurant.getAll();
+                if (restRes.success && restRes.resturants) {
+                    restaurantsList = restRes.resturants;
+                    const restSelect = document.getElementById('food-restaurant');
+                    restSelect.innerHTML = '<option value="">Select Restaurant</option>' + 
+                        restaurantsList.map(r => `<option value="${r._id}">${r.title}</option>`).join('');
+                }
+            } catch (err) {
+                console.error("Failed to initialize forms dropdowns:", err);
+            }
+        }
+
+        // --- SECTION ACTIONS ---
+
+        // 1. Load Statistics
+        async function loadStats() {
+            try {
+                // Fetch orders, menu, reservations
+                const ordersRes = await API.Order.getAllOrders();
+                const menuRes = await API.Menu.getAll();
+                const reservationRes = await API.Reservation.getAll();
+
+                let totalSales = 0;
+                let pendingOrders = 0;
+                let pendingReservations = 0;
+
+                // Total sales from delivered orders, pending count
+                if (ordersRes.success && ordersRes.orders) {
+                    ordersRes.orders.forEach(order => {
+                        if (order.status === 'deliverd') {
+                            totalSales += order.payment || 0;
+                        }
+                        if (order.status !== 'deliverd' && order.status !== 'cancelled') {
+                            pendingOrders++;
+                        }
+                    });
+                    document.getElementById('stat-revenue').innerText = `$${totalSales.toFixed(2)}`;
+                    document.getElementById('stat-orders').innerText = pendingOrders;
+
+                    // Render recent 5 orders
+                    const recentOrders = ordersRes.orders.slice(0, 5);
+                    const recentBody = document.getElementById('recent-orders-body');
+                    if (recentOrders.length > 0) {
+                        recentBody.innerHTML = recentOrders.map(order => {
+                            const date = new Date(order.createdAt).toLocaleString();
+                            const buyerName = order.buyer ? order.buyer.username : 'Unknown Customer';
+                            const statusClass = `badge-${order.status.replace(/\s+/g, '-')}`;
+                            return `
+                                <tr>
+                                    <td>#${order._id.substring(order._id.length - 6).toUpperCase()}</td>
+                                    <td>${buyerName}</td>
+                                    <td>${date}</td>
+                                    <td style="color:var(--primary-color); font-weight:700;">$${(order.payment || 0).toFixed(2)}</td>
+                                    <td><span class="status-badge ${statusClass}">${order.status}</span></td>
+                                </tr>
+                            `;
+                        }).join('');
+                    } else {
+                        recentBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--admin-text-muted);">No orders placed yet.</td></tr>';
+                    }
+                }
+
+                if (menuRes.success && menuRes.data) {
+                    document.getElementById('stat-menu-items').innerText = menuRes.data.length;
+                }
+
+                if (reservationRes.success && reservationRes.reservations) {
+                    reservationRes.reservations.forEach(r => {
+                        if (r.status === 'pending') pendingReservations++;
+                    });
+                    document.getElementById('stat-reservations').innerText = pendingReservations;
+                }
+
+            } catch (err) {
+                console.error("Error loading stats:", err);
+            }
+        }
+
+        // 2. Manage Food Menu
+        async function loadMenuData() {
+            const tableBody = document.getElementById('menu-table-body');
+            tableBody.innerHTML = '<tr><td colspan="7" class="loading">Loading dishes...</td></tr>';
+            
+            const res = await API.Menu.getAll();
+            if (res.success && res.data) {
+                if (res.data.length > 0) {
+                    tableBody.innerHTML = res.data.map(food => {
+                        return `
+                            <tr>
+                                <td><img src="${food.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100'}" style="width:50px; height:50px; border-radius:8px; object-fit:cover;"></td>
+                                <td style="font-weight:600;">${food.name}</td>
+                                <td><span class="menu-item-category">${food.category}</span></td>
+                                <td style="color:var(--primary-color); font-weight:700;">$${food.price.toFixed(2)}</td>
+                                <td>⭐ ${food.rating || '5.0'}</td>
+                                <td>
+                                    <span class="status-badge ${food.isAvailabe ? 'badge-deliverd' : 'badge-cancelled'}">
+                                        ${food.isAvailabe ? 'In Stock' : 'Out of Stock'}
+                                    </span>
+                                </td>
+                                <td>
+                                    <button class="btn-admin-action btn-admin-edit" onclick="openEditMenuModal('${food._id}')">Edit</button>
+                                    <button class="btn-admin-action btn-admin-delete" onclick="handleDeleteFood('${food._id}', '${food.name}')">Delete</button>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                } else {
+                    tableBody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--admin-text-muted);">No dishes in the menu.</td></tr>';
+                }
+            } else {
+                tableBody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:red;">Failed to load food menu.</td></tr>';
+            }
+        }
+
+        // Add/Edit Food Modal Actions
+        function openAddMenuModal() {
+            document.getElementById('modal-title').innerText = "Add New Food Item";
+            document.getElementById('food-edit-id').value = "";
+            document.getElementById('food-form').reset();
+            document.getElementById('food-modal').classList.add('open');
+        }
+
+        async function openEditMenuModal(foodId) {
+            document.getElementById('modal-title').innerText = "Edit Food Item";
+            document.getElementById('food-edit-id').value = foodId;
+
+            // Fetch menu list to find the food detail
+            const res = await API.Menu.getAll();
+            if (res.success && res.data) {
+                const food = res.data.find(f => f._id === foodId);
+                if (food) {
+                    document.getElementById('food-title').value = food.name;
+                    document.getElementById('food-description').value = food.description;
+                    document.getElementById('food-price').value = food.price;
+                    document.getElementById('food-rating').value = food.rating || 5.0;
+                    document.getElementById('food-imageUrl').value = food.image || "";
+                    document.getElementById('food-category').value = food.category || "";
+                    document.getElementById('food-restaurant').value = food.resturnat || "";
+                    document.getElementById('food-tags').value = food.foodTags || "";
+                    document.getElementById('food-code').value = food.code || "";
+                    document.getElementById('food-available').value = food.isAvailabe ? "true" : "false";
+
+                    document.getElementById('food-modal').classList.add('open');
+                }
+            }
+        }
+
+        function closeFoodModal() {
+            document.getElementById('food-modal').classList.remove('open');
+        }
+
+        async function handleFoodFormSubmit(e) {
+            e.preventDefault();
+            const foodId = document.getElementById('food-edit-id').value;
+
+            // default image if left blank
+            let imageUrl = document.getElementById('food-imageUrl').value;
+            if (!imageUrl) {
+                imageUrl = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500";
+            }
+
+            const foodDetails = {
+                title: document.getElementById('food-title').value,
+                description: document.getElementById('food-description').value,
+                price: parseFloat(document.getElementById('food-price').value),
+                imageUrl: imageUrl,
+                foodTags: document.getElementById('food-tags').value,
+                catgeory: document.getElementById('food-category').value,
+                code: document.getElementById('food-code').value,
+                isAvailabe: document.getElementById('food-available').value === "true",
+                resturnat: document.getElementById('food-restaurant').value,
+                rating: parseFloat(document.getElementById('food-rating').value)
+            };
+
+            let response;
+            if (foodId) {
+                // Update
+                response = await API.Menu.update(foodId, foodDetails);
+            } else {
+                // Create
+                response = await API.Menu.create(foodDetails);
+            }
+
+            if (response.success) {
+                showNotification(foodId ? "Food item updated successfully!" : "Food item created successfully!");
+                closeFoodModal();
+                loadMenuData();
+            } else {
+                showNotification(response.message || "Failed to save food item.", "error");
+            }
+        }
+
+        async function handleDeleteFood(id, name) {
+            if (confirm(`Are you sure you want to delete "${name}" from the menu?`)) {
+                const res = await API.Menu.delete(id);
+                if (res.success) {
+                    showNotification(`"${name}" was deleted successfully.`);
+                    loadMenuData();
+                } else {
+                    showNotification(res.message || "Failed to delete food item.", "error");
+                }
+            }
+        }
+
+        // 3. Manage Orders
+        async function loadOrdersData() {
+            const tableBody = document.getElementById('orders-table-body');
+            tableBody.innerHTML = '<tr><td colspan="6" class="loading">Loading customer orders...</td></tr>';
+
+            const res = await API.Order.getAllOrders();
+            if (res.success && res.orders) {
+                if (res.orders.length > 0) {
+                    tableBody.innerHTML = res.orders.map(order => {
+                        const date = new Date(order.createdAt).toLocaleString();
+                        const buyerDetails = order.buyer ? `
+                            <div><strong>${order.buyer.username}</strong></div>
+                            <div style="font-size:0.8rem; color:var(--admin-text-muted);">${order.buyer.phone}</div>
+                            <div style="font-size:0.8rem; color:var(--admin-text-muted);">${order.buyer.address}</div>
+                        ` : '<div style="color:red;">Deleted User</div>';
+
+                        const foodNames = order.foods && order.foods.length > 0 
+                            ? order.foods.map(f => `• ${f.title}`).join('<br>')
+                            : '<span style="color:var(--admin-text-muted); font-style:italic;">No details</span>';
+
+                        return `
+                            <tr>
+                                <td>#${order._id.substring(order._id.length - 6).toUpperCase()}</td>
+                                <td>${buyerDetails}</td>
+                                <td>${foodNames}</td>
+                                <td style="color:var(--primary-color); font-weight:700;">$${(order.payment || 0).toFixed(2)}</td>
+                                <td>${date}</td>
+                                <td>
+                                    <select class="admin-select-status" onchange="handleUpdateOrderStatus('${order._id}', this.value)">
+                                        <option value="preparing" ${order.status === 'preparing' ? 'selected' : ''}>Preparing</option>
+                                        <option value="prepare" ${order.status === 'prepare' ? 'selected' : ''}>Prepare (Ready)</option>
+                                        <option value="on the way" ${order.status === 'on the way' ? 'selected' : ''}>On the Way</option>
+                                        <option value="deliverd" ${order.status === 'deliverd' ? 'selected' : ''}>Delivered</option>
+                                    </select>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                } else {
+                    tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--admin-text-muted);">No customer orders placed yet.</td></tr>';
+                }
+            } else {
+                tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:red;">Failed to load customer orders.</td></tr>';
+            }
+        }
+
+        async function handleUpdateOrderStatus(orderId, newStatus) {
+            const res = await API.Order.updateStatus(orderId, newStatus);
+            if (res.success) {
+                showNotification("Order status updated successfully!");
+            } else {
+                showNotification(res.message || "Failed to update order status.", "error");
+            }
+        }
+
+        // 4. Manage Table Bookings
+        async function loadReservationsData() {
+            const tableBody = document.getElementById('reservations-table-body');
+            tableBody.innerHTML = '<tr><td colspan="8" class="loading">Loading table bookings...</td></tr>';
+
+            const res = await API.Reservation.getAll();
+            if (res.success && res.reservations) {
+                if (res.reservations.length > 0) {
+                    tableBody.innerHTML = res.reservations.map(resv => {
+                        const resvDate = new Date(resv.date).toLocaleDateString('en-US', {
+                            month: 'short', day: 'numeric', year: 'numeric'
+                        });
+
+                        // Time format
+                        let friendlyTime = resv.time;
+                        if (resv.time && resv.time.includes(':')) {
+                            const [h, m] = resv.time.split(':');
+                            let hrs = parseInt(h, 10);
+                            const ampm = hrs >= 12 ? 'PM' : 'AM';
+                            hrs = hrs % 12;
+                            hrs = hrs ? hrs : 12;
+                            friendlyTime = `${hrs}:${m} ${ampm}`;
+                        }
+
+                        const statusClass = `badge-${resv.status}`;
+                        const actionButtons = resv.status === 'pending' ? `
+                            <button class="btn-admin-action btn-admin-approve" onclick="handleUpdateReservationStatus('${resv._id}', 'approved')">Approve</button>
+                            <button class="btn-admin-action btn-admin-reject" onclick="handleUpdateReservationStatus('${resv._id}', 'rejected')">Reject</button>
+                        ` : `<span style="color:var(--admin-text-muted); font-style:italic;">No Actions</span>`;
+
+                        return `
+                            <tr>
+                                <td style="font-weight:600;">${resv.name}</td>
+                                <td>
+                                    <div>${resv.phone}</div>
+                                    <div style="font-size:0.8rem; color:var(--admin-text-muted);">${resv.email}</div>
+                                </td>
+                                <td>${resvDate}</td>
+                                <td>${friendlyTime}</td>
+                                <td>${resv.guests}</td>
+                                <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${resv.notes || ''}">
+                                    ${resv.notes || '<span style="color:var(--admin-text-muted); font-style:italic;">None</span>'}
+                                </td>
+                                <td><span class="status-badge ${statusClass}">${resv.status}</span></td>
+                                <td>${actionButtons}</td>
+                            </tr>
+                        `;
+                    }).join('');
+                } else {
+                    tableBody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--admin-text-muted);">No table bookings found.</td></tr>';
+                }
+            } else {
+                tableBody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:red;">Failed to load table bookings.</td></tr>';
+            }
+        }
+
+        async function handleUpdateReservationStatus(resvId, newStatus) {
+            const res = await API.Reservation.updateStatus(resvId, newStatus);
+            if (res.success) {
+                showNotification(`Reservation has been ${newStatus}!`);
+                loadReservationsData();
+            } else {
+                showNotification(res.message || "Failed to update reservation status.", "error");
+            }
+        }
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', () => {
+            initDropdowns();
+            loadStats();
+        });
+    </script>
+</body>
+</html>

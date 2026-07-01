@@ -298,6 +298,51 @@ const orderStatusController = async (req, res) => {
   }
 };
 
+// GET USER ORDERS
+const getUserOrdersController = async (req, res) => {
+  try {
+    const orders = await orderModel
+      .find({ buyer: req.body.id })
+      .populate("foods")
+      .sort({ createdAt: -1 });
+    res.status(200).send({
+      success: true,
+      totalOrders: orders.length,
+      orders,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({
+      success: false,
+      message: "Error In Get User Orders API",
+      error,
+    });
+  }
+};
+
+// GET ALL ORDERS (ADMIN)
+const getAllOrdersController = async (req, res) => {
+  try {
+    const orders = await orderModel
+      .find({})
+      .populate("buyer", "username email phone address")
+      .populate("foods")
+      .sort({ createdAt: -1 });
+    res.status(200).send({
+      success: true,
+      totalOrders: orders.length,
+      orders,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({
+      success: false,
+      message: "Error In Get All Orders API",
+      error,
+    });
+  }
+};
+
 module.exports = {
   createFoodController,
   getAllFoodsController,
@@ -307,4 +352,6 @@ module.exports = {
   deleteFoodController,
   placeOrderController,
   orderStatusController,
+  getUserOrdersController,
+  getAllOrdersController,
 };
